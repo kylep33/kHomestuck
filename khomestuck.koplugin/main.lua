@@ -4,6 +4,7 @@ kylep333/khomestuck-packs GitHub release into /mnt/us/homestuck/<section>/. ]]
 local Blitbuffer = require("ffi/blitbuffer")
 local ButtonDialog = require("ui/widget/buttondialog")
 local ConfirmBox = require("ui/widget/confirmbox")
+local Dispatcher = require("dispatcher")
 local Device = require("device")
 local Font = require("ui/font")
 local Geom = require("ui/geometry")
@@ -33,6 +34,7 @@ local T = ffiUtil.template
 local Screen = Device.screen
 
 local ROOT = "/mnt/us/homestuck"
+local LAUNCH_FLAG = "/tmp/khomestuck.open" -- written by the home screen tile before it starts KOReader
 -- a GitHub release holding index.json and one <section>.zip per act or intermission
 local PACKS_URL = "https://github.com/kylep333/khomestuck-packs/releases/download/packs"
 local KINAMP = "/mnt/us/KinAMP/startkinamp_koreader.sh"
@@ -598,12 +600,20 @@ function KHomestuck:init()
     G_reader_settings:saveSetting("khomestuck", self.settings) -- edits mutate this table in place
     self.downloads = {}
     self.ui.menu:registerToMainMenu(self)
+    -- a "Homestuck" action for KOReader's gestures and quick menus
+    Dispatcher:registerAction("khomestuck_open", {
+        category = "none", event = "KHomestuckOpen", title = _("Homestuck"), general = true,
+    })
+    -- started from the Kindle home screen tile (launcher/homestuck.sh): open straight away
+    if os.remove(LAUNCH_FLAG) then UIManager:nextTick(function() self:showSections() end) end
 end
+
+function KHomestuck:onKHomestuckOpen() self:showSections() end
 
 function KHomestuck:addToMainMenu(menu_items)
     menu_items.khomestuck = {
         text = _("Homestuck"),
-        sorting_hint = "more_tools",
+        sorting_hint = "tools", -- top of the Tools tab, next to KinAMP Player
         callback = function() self:showSections() end,
     }
 end
@@ -869,12 +879,13 @@ function Home:paintRow(bb, r, s)
     local app, pad = self.app, self.pad
     local current = self.here and self.here.id == s.id
     local fg = current and WHITE or BLACK
+    local installed = app:installed(s.id)
     if current then
         bb:paintRect(r.x, r.y, r.w, r.h, BLACK) -- the act you're in, highlighted like a selection
     else
-        bevelBox(bb, r, self.bg ~= nil)
+        -- downloaded sections let the picture show through; ones still in the cloud stay solid
+        bevelBox(bb, r, self.bg ~= nil and installed)
     end
-    local installed = app:installed(s.id)
     local ir = self:iconRect(r)
     local right = ir.x - pad -- where the right-hand text ends
 

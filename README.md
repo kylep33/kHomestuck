@@ -10,6 +10,9 @@ with sound over Bluetooth through KinAMP.
   [kylep333/khomestuck-packs](https://github.com/kylep333/khomestuck-packs) release over HTTPS.
 - **tools/build_all.sh**: builds sections in parallel and uploads each one to that release.
 - **tools/push.sh**: copies built packs straight to a Kindle over SSH, without GitHub.
+- **launcher/homestuck.sh**: Kindle home screen tile (goes in `/mnt/us/documents/`). It starts
+  KOReader straight into the Homestuck window. Its cover is `launcher/icon.png`, embedded as base64
+  in the `# Icon:` line.
 
 ## Build and publish sections
 
@@ -43,7 +46,8 @@ tools/push.sh act1 act2    # SSH to root@kile-kindle (set KINDLE= for another)
 
 ## Reading
 
-KOReader → tools menu → **Homestuck** opens the sections window.
+The **Homestuck** tile on the Kindle home screen, KOReader's Tools tab → **Homestuck**, or a
+gesture set to the "Homestuck" action all open the sections window.
 - **Continue reading** goes back to the last page you read. Each section remembers its own page.
 - Tap a section to read it. Its cloud button downloads it; its trash button deletes it.
 - **Options**: refresh the section list, download location, GIF autoplay, picture background.
