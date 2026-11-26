@@ -1,0 +1,13 @@
+data/
+packs/
+ruffle/
+tools/jre/
+tools/ffdec/
+tools/rustup/
+tools/cargo/
+*.log
+tools/ffmpeg/
+work/
+logs/
+logs_*.txt
+__pycache__/
