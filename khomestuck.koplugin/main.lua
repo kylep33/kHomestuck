@@ -4,6 +4,7 @@ kylep333/khomestuck-packs GitHub release into /mnt/us/homestuck/<section>/. ]]
 local Blitbuffer = require("ffi/blitbuffer")
 local ButtonDialog = require("ui/widget/buttondialog")
 local ConfirmBox = require("ui/widget/confirmbox")
+local DataStorage = require("datastorage")
 local Device = require("device")
 local Font = require("ui/font")
 local Geom = require("ui/geometry")
@@ -600,6 +601,12 @@ function KHomestuck:init()
     G_reader_settings:saveSetting("khomestuck", self.settings) -- edits mutate this table in place
     self.downloads = {}
     self.ui.menu:registerToMainMenu(self)
+    -- ZenOS's App Launcher matches app names to SVGs in koreader/icons: give it our SBURB house
+    local icon = DataStorage:getFullDataDir() .. "/icons/homestuck.svg"
+    if not lfs.attributes(icon, "mode") then
+        lfs.mkdir(DataStorage:getFullDataDir() .. "/icons")
+        ffiUtil.copyFile(self.path .. "/homestuck.svg", icon)
+    end
 end
 
 -- The Homestuck book (launcher/khomestuck.epub) was opened, from the library, "continue reading"
