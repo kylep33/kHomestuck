@@ -964,7 +964,7 @@ function Home:paintRow(bb, r, s)
     size:paintTo(bb, right - size:getSize().w, r.y + math.floor((r.h - size:getSize().h) / 2))
     size:free()
     if s.size then
-        bevelBox(bb, ir)
+        bevelBox(bb, ir) -- the cloud/trash button stays solid even on a see-through row
         pixelIcon(bb, ir, installed and ICON_TRASH or ICON_DOWNLOAD)
     end
 end
@@ -996,7 +996,7 @@ function Home:paintTo(bb, x, y)
     -- continue card
     local c = self.cont_rect
     if c then
-        bevelBox(bb, c, self.bg ~= nil)
+        bevelBox(bb, c) -- solid: only downloaded section rows let the picture through
         local l1 = text("> Continue reading", mono(21), c.w - 3 * pad)
         local at, of = app:sectionPosition(self.here, app.settings.page)
         local l2 = text(T("%1 · %2 / %3 · %4", self.here.name, at, of, app.settings.page_title or ""), mono(15), c.w - 3 * pad)
