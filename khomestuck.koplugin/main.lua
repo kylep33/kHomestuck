@@ -49,6 +49,7 @@ local SYNC_SECONDS = 3 -- how long to force fresh KinAMP positions after audio s
 local NO_AUDIO_WAIT = 10 -- seconds before giving up on KinAMP and playing silent
 local TICK = 0.04
 local MEDIA_SHARE = 0.62 -- most of the screen height panels may take; the text gets the rest
+local MENU_SWIPE_ZONE = 0.14 -- a swipe down starting this high opens KOReader's menu (ZenOS uses 14%)
 
 local function hsNumber(pid) return tonumber(pid) - 1900 end -- homestuck.com page numbers
 
@@ -571,6 +572,7 @@ end
 
 function PageView:onSwipe(_, ges)
     local p, dir = self.page, ges.direction
+    if dir == "south" and ges.pos.y < self.dimen.h * MENU_SWIPE_ZONE then return self.app:showKOReaderMenu() end
     if (dir == "north" or dir == "south") and inside(self.text_rect, ges.pos.x, ges.pos.y) then
         return self:scroll(dir == "north" and 1 or -1)
     end
@@ -651,6 +653,14 @@ function KHomestuck:addToMainMenu(menu_items)
         sorting_hint = "tools", -- top of the Tools tab, next to KinAMP Player
         callback = function() self:showSections() end,
     }
+end
+
+-- KOReader's top menu (ZenOS's dropdown when ZenOS is installed). Our screens cover the reader
+-- or file browser and take every gesture, so its own top tap/swipe never reaches it.
+function KHomestuck:showKOReaderMenu()
+    local menu = self.ui and self.ui.menu
+    if menu and menu.onShowMenu then menu:onShowMenu() end
+    return true
 end
 
 -- last page read overall (for Continue) and in each section (for opening that section)
@@ -1044,6 +1054,7 @@ end
 function Home:onTap(_, ges)
     local x, y = ges.pos.x, ges.pos.y
     if inside(self.close_rect, x, y) then return self:onClose() end
+    if y < self.title_h then return self.app:showKOReaderMenu() end -- the title bar, like KOReader's top tap
     if inside(self.options_rect, x, y) then return self.app:showOptions() end
     if inside(self.cont_rect, x, y) then return self.app:openPage(self.app.settings.page) end
     local step = self.sb and self.sb:hit(x, y, self.page, self.pages)
@@ -1063,6 +1074,9 @@ function Home:onHold(_, ges)
 end
 
 function Home:onSwipe(_, ges)
+    if ges.direction == "south" and ges.pos.y < self.dimen.h * MENU_SWIPE_ZONE then
+        return self.app:showKOReaderMenu()
+    end
     if ges.direction == "north" then return self:turn(1) end
     if ges.direction == "south" then return self:turn(-1) end
 end
