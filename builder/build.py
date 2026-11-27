@@ -168,6 +168,12 @@ def clip_audio(z, swf_name, swf, tmp):
 
 def build_media(z, path, page, out, tmp):
     name = "Asset_Pack" + path
+    if name not in z.NameToInfo:
+        # A6A6I1's fullscreen flashes are listed under Sfiles/ but stored one level up (UHC remaps them)
+        name = name.replace("/Sfiles/", "/")
+    if name not in z.NameToInfo:
+        print("  missing media:", page["pageId"], path, flush=True)
+        return {"kind": "none", "note": "This page's media is missing from the archive."}
     ext = os.path.splitext(path)[1].lower()
     base = re.sub(r"[^\w.-]", "_", os.path.basename(path).rsplit(".", 1)[0])
     if ext in (".gif", ".png", ".jpg"):
