@@ -17,6 +17,16 @@ with sound over Bluetooth through KinAMP.
 - **launcher/homestuck.sh**: Kindle home screen tile (goes in `/mnt/us/documents/`) that opens
   that book. The same cover is embedded as base64 in its `# Icon:` line.
 
+## Install on a Kindle (KPM)
+
+Type in the Kindle search bar:
+`;kpm add-repo https://kylep33.github.io/kile-kpm-repo/manifest.json`, then `;kpm update` and
+`;kpm install khomestuck`. That installs the plugin, the Homestuck book and the home screen tile;
+acts download from inside the app. For [S] sound also install KinAMP (kindletweaks repo).
+
+Release a new plugin version to KPM: `./release.sh 1.0.1 "what changed"` (packs `kpm/` + the plugin
++ `launcher/` into a .kpkg in ../kile-kpm-repo and publishes it).
+
 ## Build and publish sections
 
 ```sh

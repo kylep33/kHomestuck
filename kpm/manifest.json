@@ -1,0 +1,10 @@
+{
+  "manifest_version": 2,
+  "id": "khomestuck",
+  "name": "kHomestuck",
+  "author": "kylep33",
+  "description": "Read Homestuck on your Kindle in KOReader, page by page like the website: tap the next command, open Pesterlogs, GIF panels animate, and [S] animations play with sound over Bluetooth through KinAMP (install KinAMP separately for sound). Acts download from inside the app. Adds a Homestuck book to your library and a Homestuck tile to the home screen.",
+  "version": [1, 0, 0],
+  "dependencies": [],
+  "supported_platforms": null
+}
