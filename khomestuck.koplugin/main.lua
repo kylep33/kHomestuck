@@ -627,7 +627,14 @@ end
 function KHomestuck:closeBook()
     if self.book_mode then
         self.book_mode = false
-        UIManager:nextTick(function() self.ui:onClose() end)
+        UIManager:nextTick(function()
+            -- Open the file browser in the same step, as KOReader's own "file browser" item does:
+            -- started from the home screen tile there is none underneath, and closing the last
+            -- window makes KOReader quit back to the Kindle.
+            local file = self.ui.document and self.ui.document.file
+            self.ui:onClose()
+            self.ui:showFileManager(file)
+        end)
     end
 end
 
