@@ -4,7 +4,6 @@ kylep333/khomestuck-packs GitHub release into /mnt/us/homestuck/<section>/. ]]
 local Blitbuffer = require("ffi/blitbuffer")
 local ButtonDialog = require("ui/widget/buttondialog")
 local ConfirmBox = require("ui/widget/confirmbox")
-local Dispatcher = require("dispatcher")
 local Device = require("device")
 local Font = require("ui/font")
 local Geom = require("ui/geometry")
@@ -34,7 +33,8 @@ local T = ffiUtil.template
 local Screen = Device.screen
 
 local ROOT = "/mnt/us/homestuck"
-local LAUNCH_FLAG = "/tmp/khomestuck.open" -- written by the home screen tile before it starts KOReader
+local BOOK_NAME = "khomestuck.epub" -- the library "book" that opens Homestuck (launcher/make_book.py)
+local TOTAL_PAGES = 8130 -- homestuck.com numbering runs to 8130 (with six gaps)
 -- a GitHub release holding index.json and one <section>.zip per act or intermission
 local PACKS_URL = "https://github.com/kylep333/khomestuck-packs/releases/download/packs"
 local KINAMP = "/mnt/us/KinAMP/startkinamp_koreader.sh"
@@ -600,15 +600,36 @@ function KHomestuck:init()
     G_reader_settings:saveSetting("khomestuck", self.settings) -- edits mutate this table in place
     self.downloads = {}
     self.ui.menu:registerToMainMenu(self)
-    -- a "Homestuck" action for KOReader's gestures and quick menus
-    Dispatcher:registerAction("khomestuck_open", {
-        category = "none", event = "KHomestuckOpen", title = _("Homestuck"), general = true,
-    })
-    -- started from the Kindle home screen tile (launcher/homestuck.sh): open straight away
-    if os.remove(LAUNCH_FLAG) then UIManager:nextTick(function() self:showSections() end) end
 end
 
-function KHomestuck:onKHomestuckOpen() self:showSections() end
+-- The Homestuck book (launcher/khomestuck.epub) was opened, from the library, "continue reading"
+-- or the home screen tile: show Homestuck in its place, at the page you left off on.
+function KHomestuck:onReaderReady()
+    local file = self.ui.document and self.ui.document.file
+    if not file or file:match("[^/]+$") ~= BOOK_NAME then return end
+    self.book_mode = true
+    UIManager:nextTick(function()
+        self:showSections()
+        local pid = self.settings.page
+        local s = pid and self:sectionFor(pid)
+        if s and self:installed(s.id) then self:openPage(pid) end
+    end)
+end
+
+-- the book's progress bar in the library shows how far through Homestuck you are
+function KHomestuck:onSaveSettings()
+    if self.book_mode and self.settings.page and self.ui.doc_settings then
+        self.ui.doc_settings:saveSetting("percent_finished", hsNumber(self.settings.page) / TOTAL_PAGES)
+    end
+end
+
+-- leaving Homestuck closes the book too, back to the library
+function KHomestuck:closeBook()
+    if self.book_mode then
+        self.book_mode = false
+        UIManager:nextTick(function() self.ui:onClose() end)
+    end
+end
 
 function KHomestuck:addToMainMenu(menu_items)
     menu_items.khomestuck = {
@@ -800,8 +821,6 @@ local function pixelIcon(bb, r, icon)
         end
     end
 end
-
-local TOTAL_PAGES = 8130 -- homestuck.com numbering runs to 8130 (with six gaps)
 
 local Home = InputContainer:extend{ app = nil, covers_fullscreen = true }
 
@@ -1041,6 +1060,7 @@ end
 
 function Home:onClose()
     UIManager:close(self, "full")
+    self.app:closeBook()
     return true
 end
 
