@@ -11,3 +11,4 @@ work/
 logs/
 logs_*.txt
 __pycache__/
+tools/yt-dlp

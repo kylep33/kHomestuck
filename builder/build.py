@@ -166,7 +166,49 @@ def clip_audio(z, swf_name, swf, tmp):
     return out
 
 
+def build_clip_from_video(video, page_id, out):
+    """[S] page from a video file: frames at CLIP_FPS and the video's own audio, so they stay in sync.
+    Used for flashes Ruffle can't render (data/videos/<page>.*) and the archive's own .mp4 pages."""
+    probe = subprocess.run([os.path.join(os.path.dirname(FFMPEG), "ffprobe"), "-v", "error", "-select_streams", "v:0",
+                            "-show_entries", "stream=width,height", "-of", "csv=p=0", video],
+                           check=True, capture_output=True, text=True).stdout.split(",")
+    vw, vh = int(probe[0]), int(probe[1])
+    w, h = WIDTH, round(vh * WIDTH / vw / 2) * 2
+    writer = FrameWriter(os.path.join(out, "clip", page_id + ".bin"))
+    # stream raw gray frames from ffmpeg instead of writing gigabytes of PNGs for a 14-minute flash
+    proc = subprocess.Popen([FFMPEG, "-v", "error", "-i", video, "-vf",
+                             "fps=%d,scale=%d:%d:flags=lanczos,format=gray" % (CLIP_FPS, w, h),
+                             "-f", "rawvideo", "-"], stdout=subprocess.PIPE)
+    size = w * h
+    while True:
+        buf = proc.stdout.read(size)
+        if len(buf) < size:
+            break
+        writer.add(Image.frombytes("L", (w, h), buf))
+    if proc.wait() != 0:
+        raise RuntimeError("ffmpeg failed on " + video)
+    meta = writer.close()
+    meta.update(kind="clip", fps=CLIP_FPS, bin="clip/%s.bin" % page_id,
+                poster=min(len(meta["offsets"]) - 2, 2 * CLIP_FPS))
+    audio = os.path.join(out, "clip", page_id + ".mp3")
+    if subprocess.run([FFMPEG, "-y", "-v", "error", "-i", video, "-vn", "-ar", "44100", "-ac", "2",
+                       "-b:a", "128k", audio], capture_output=True).returncode == 0:
+        meta["audio"] = "clip/%s.mp3" % page_id
+    return meta
+
+
+def video_override(page_id):
+    """A video to use instead of rendering this page's flash, e.g. data/videos/006009.mp4 for Cascade."""
+    d = os.path.join(ROOT, "data", "videos")
+    for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+        if f.split(".")[0] == page_id and not f.endswith(".part"):
+            return os.path.join(d, f)
+
+
 def build_media(z, path, page, out, tmp):
+    override = video_override(page["pageId"])
+    if override and path.lower().endswith(".swf"):
+        return build_clip_from_video(override, page["pageId"], out)
     name = "Asset_Pack" + path
     if name not in z.NameToInfo:
         # A6A6I1's fullscreen flashes are listed under Sfiles/ but stored one level up (UHC remaps them)
@@ -204,6 +246,10 @@ def build_media(z, path, page, out, tmp):
                 if os.path.exists(p):
                     os.remove(p)
             return {"kind": "none", "note": "This animation couldn't be converted."}
+    if ext == ".mp4":  # the archive's own videos, e.g. the end of Act 7
+        video = os.path.join(tmp, "in.mp4")
+        open(video, "wb").write(z.read(name))
+        return build_clip_from_video(video, page["pageId"], out)
     return {"kind": "none", "note": "Not supported on Kindle (%s)." % ext}
 
 
